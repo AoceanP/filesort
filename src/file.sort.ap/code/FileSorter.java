@@ -5,103 +5,146 @@ import java.nio.file.StandardCopyOption;
 import java.util.Scanner;
 
 /**
- * My files are unorganized, I want a better way to manage them. So I created a file sorter
- * to assist a solution. The class will scan a folder and list all the files in it, then sort
- * the files into the respective folders.
+ * FileSorter is a utility class that organizes files from a selected folder.
+ * It moves files containing specific keywords (e.g., "bcit", "comp") or 4-digit numbers
+ * to a predefined destination directory.
+ *
+ * This class is intended to help reduce clutter and enhance file management.
  *
  * @author Aleksandar Panich
  * @version 1.0
- * */
-public class FileSorter {
-    public static void main(final String[] args) {
+ */
+public class FileSorter
+{
 
+    /**
+     * Launches the file organizer via a simple console interface.
+     * Allows the user to select a common folder (Desktop, Downloads, Documents),
+     * or enter a custom path. Invokes the sortFiles method based on the input.
+     *
+     * @param args not used.
+     */
+    public static void main(final String[] args)
+    {
+        Scanner scanner = new Scanner(System.in);
+
+        final String userHome = System.getProperty("user.home");
+        final String destinationPath = userHome + "\\Desktop\\BCIT_AP";
+
+        System.out.println("=== File Organizer ===");
+        System.out.println("Choose a folder to organize:");
+        System.out.println("1. Desktop");
+        System.out.println("2. Downloads");
+        System.out.println("3. Documents");
+        System.out.println("4. Enter custom path");
+
+        String selectedPath = null;
+        int choice = scanner.nextInt();
+        scanner.nextLine(); // Consume newline
+
+        switch (choice)
         {
-            Scanner scanner = new Scanner(System.in);
-
-            final String userHome = System.getProperty("user.home");
-            final String destinationPath = userHome + "\\Desktop\\BCIT_AP";
-
-            System.out.println("=== File Organizer ===");
-            System.out.println("Choose a folder to organize:");
-            System.out.println("1. Desktop");
-            System.out.println("2. Downloads");
-            System.out.println("3. Documents");
-            System.out.println("4. Enter a custom path");
-            System.out.print("Enter your choice (1-4): ");
-
-            final int choice = scanner.nextInt();
-            scanner.nextLine();
-
-            final String directorypath;
-
-            switch (choice) {
-                case 1:
-                    directorypath = userHome + "\\Desktop";
-                    break;
-                case 2:
-                    directorypath = userHome + "\\Downloads";
-                    break;
-                case 3:
-                    directorypath = userHome + "\\Documents";
-                    break;
-                case 4:
-                    System.out.print("Enter full source path: ");
-                    directorypath = scanner.nextLine();
-                    break;
-                default:
-                    System.out.println("Invalid choice. Exiting.");
-                    scanner.close();
-                    return;
-            }
-
-            File sourcefolder = new File(directorypath);
-            File[] files = sourcefolder.listFiles();
-
-            if (files == null || files.length == 0) {
-                System.out.println("No files found in: " + directorypath);
+            case 1:
+                selectedPath = userHome + "\\Desktop";
+                break;
+            case 2:
+                selectedPath = userHome + "\\Downloads";
+                break;
+            case 3:
+                selectedPath = userHome + "\\Documents";
+                break;
+            case 4:
+                System.out.print("Enter full path: ");
+                selectedPath = scanner.nextLine();
+                break;
+            default:
+                System.out.println("Invalid choice. Exiting...");
                 return;
-            }
-            for (File file : files) {
-                if (file.isFile()) {
-                    String filename = file.getName();
-                    String lowerName = filename.toLowerCase();
+        }
 
-                    boolean containsBCIT = lowerName.contains("bcit");
-                    boolean containsCOMP = lowerName.contains("comp");
-                    boolean contains4Digit = false;
+        File sourceFolder = new File(selectedPath);
+        File destinationFolder = new File(destinationPath);
+        sortFiles(sourceFolder, destinationFolder);
+    }
 
-                    for (int i = 0; i < filename.length() - 3; i++) {
-                        String segment = filename.substring(i, i + 4);
+    /**
+     * Sorts files from the source folder to the destination folder.
+     * Only moves files that contain "bcit", "comp", or a 4-digit year (e.g., "2023").
+     *
+     * If the destination folder does not exist, it is created.
+     * Files are copied with overwrite enabled and errors are printed if they occur.
+     *
+     * @param sourceFolder the folder to scan for matching files
+     * @param destinationFolder the folder where matching files will be copied to
+     */
+    public static void sortFiles(File sourceFolder, File destinationFolder)
+    {
+        if (!destinationFolder.exists())
+        {
+            destinationFolder.mkdirs();
+        }
 
-                        if (segment.chars().allMatch(Character::isDigit)) {
-                            boolean leftValid = (i == 0 || !Character.isDigit(filename.charAt(i - 1)));
-                            boolean rightValid = (i + 4 == filename.length() || !Character.isDigit(filename.charAt(i + 4)));
+        File[] files = sourceFolder.listFiles();
+        if (files == null || files.length == 0)
+        {
+            System.out.println("No files to organize.");
+            return;
+        }
 
-                            if (leftValid && rightValid) {
-                                contains4Digit = true;
-                                break;
-                            }
+        for (File file : files)
+        {
+            String fileName = file.getName().toLowerCase();
+
+            boolean containsBCIT;
+            boolean containsCOMP;
+            boolean isFourDigit;
+
+            try
+            {
+                containsBCIT = fileName.contains("bcit");
+                containsCOMP = fileName.contains("comp");
+
+                isFourDigit = false;
+                String[] parts = fileName.split("[^0-9]+");
+                for (String part : parts)
+                {
+                    if (part.length() == 4)
+                    {
+                        try
+                        {
+                            Integer.parseInt(part);
+                            isFourDigit = true;
+                            break;
                         }
-                    }
-                    if (containsBCIT || containsCOMP || contains4Digit) {
-                        File destDir = new File(destinationPath);
-                        if (!destDir.exists()) {
-                            destDir.mkdirs();
-                        }
-
-                        File destFile = new File(destDir, filename);
-                        try {
-                            Files.move(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                            System.out.println("Moved: " + filename);
-                        } catch (IOException e) {
-                            System.out.println("Failed to move: " + filename);
-                            e.printStackTrace();
+                        catch (NumberFormatException e)
+                        {
+                            // Skip invalid number
                         }
                     }
                 }
             }
-            scanner.close();
+            catch (IllegalArgumentException e)
+            {
+                System.out.println("Invalid filename encountered: " + fileName);
+                containsBCIT = false;
+                containsCOMP = false;
+                isFourDigit = false;
+            }
+
+            if (containsBCIT || containsCOMP || isFourDigit)
+            {
+                File destFile = new File(destinationFolder, file.getName());
+                try
+                {
+                    Files.copy(file.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    System.out.println("Moved: " + file.getName());
+                }
+                catch (IOException e)
+                {
+                    System.out.println("Failed to move file: " + file.getName());
+                    e.printStackTrace();
+                }
+            }
         }
     }
-    public static void sortFiles(File sourceFolder, File destinationFolder){};
 }

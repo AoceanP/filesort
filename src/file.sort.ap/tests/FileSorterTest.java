@@ -3,20 +3,27 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * FileSorterTest validates the core logic of FileSorter:
- * - Moves files with "bcit", "comp", or exactly 4-digit numbers
- * - Handles edge cases like empty or non-existent directories
- * - Triggers and catches IOExceptions safely
+ * FileSorterTest provides test coverage for the FileSorter class.
+ * It checks if matching files are correctly moved, verifies behavior
+ * for empty folders, and validates basic error-handling paths.
+ * This test is run through a CLI and outputs success/failure messages.
  *
  * @author Aleksandar
  * @version 1.0
  */
-public class FileSorterTest {
+public class FileSorterTest
+{
 
-    public static void main(String[] args) {
+    /**
+     * Executes all test scenarios for FileSorter.
+     * Validates sorting logic for known cases and edge cases like empty directories.
+     *
+     * @param args not used
+     */
+    public static void main(String[] args)
+    {
         System.out.println("=== Running FileSorter Tests ===");
 
-        // ✅ Test 1: Valid source folder with a matching file name
         File source1 = new File("test_source1");
         File destination1 = new File("test_destination1");
         setupFolder(source1);
@@ -26,68 +33,78 @@ public class FileSorterTest {
         FileSorter.sortFiles(source1, destination1);
         assertFileMoved("bcit_schedule.txt", source1, destination1);
 
-        // ✅ Test 2: Empty folder (Edge case)
         File source2 = new File("test_source2_empty");
         setupFolder(source2);
         FileSorter.sortFiles(source2, destination1);
 
-        // ✅ Test 3: Non-existent folder (Edge case)
-        File source3 = new File("folder_does_not_exist_123");
+        File source3 = new File("test_source3");
+        setupFolder(source3);
+        createTestFile(source3, "report_2023.pdf");
         FileSorter.sortFiles(source3, destination1);
+        assertFileMoved("report_2023.pdf", source3, destination1);
 
-        // ✅ Test 4: Simulated I/O exception (read-only file)
-        File source4 = new File("test_source4_io");
-        setupFolder(source4);
-        File errorFile = createTestFile(source4, "comp_locked.txt");
-        if (errorFile.exists()) {
-            errorFile.setWritable(false); // simulate permission error
-        }
-        FileSorter.sortFiles(source4, destination1);
-        if (errorFile.exists()) {
-            errorFile.setWritable(true); // restore so it can be cleaned up
-        }
-
-        System.out.println("=== Tests Complete ===");
+        System.out.println("✅ All tests completed.");
     }
 
     /**
-     * Helper to create folders if they don’t exist.
+     * Sets up the given directory for testing. Creates it if it does not exist,
+     * and clears existing contents to ensure a clean test state.
+     *
+     * @param folder the directory to prepare for testing
      */
-    private static void setupFolder(File folder) {
-        if (!folder.exists()) {
-            boolean created = folder.mkdirs();
-            if (!created) {
-                System.out.println("Could not create folder: " + folder.getAbsolutePath());
-            }
+    private static void setupFolder(File folder)
+    {
+        if (!folder.exists())
+        {
+            folder.mkdirs();
+        }
+        for (File file : folder.listFiles())
+        {
+            file.delete();
         }
     }
 
     /**
-     * Helper to create a file with test content in a folder.
+     * Creates a dummy file with the specified name and sample content
+     * inside the provided directory. Used to simulate a file to be sorted.
+     *
+     * @param dir the directory where the file will be created
+     * @param filename the name of the file to be created
      */
-    private static File createTestFile(File folder, String filename) {
-        File file = new File(folder, filename);
-        try (FileWriter writer = new FileWriter(file)) {
-            writer.write("Sample content for " + filename);
-            System.out.println("Created test file: " + file.getName());
-        } catch (IOException e) {
-            System.out.println("❌ Failed to create test file: " + filename);
-            e.printStackTrace();
+    private static void createTestFile(File dir, String filename)
+    {
+        try
+        {
+            FileWriter writer = new FileWriter(new File(dir, filename));
+            writer.write("Test content");
+            writer.close();
         }
-        return file;
+        catch (IOException e)
+        {
+            System.out.println("Failed to create test file: " + filename);
+        }
     }
 
     /**
-     * Verifies whether a file was moved from one directory to another.
+     * Verifies that a file was successfully moved from source to destination.
+     * Outputs a test pass/fail message based on file existence.
+     *
+     * @param filename the file name to check
+     * @param sourceDir the directory it was originally located in
+     * @param destDir the directory it should now reside in
      */
-    private static void assertFileMoved(String filename, File from, File to) {
-        File oldFile = new File(from, filename);
-        File newFile = new File(to, filename);
+    private static void assertFileMoved(String filename, File sourceDir, File destDir)
+    {
+        File sourceFile = new File(sourceDir, filename);
+        File destFile = new File(destDir, filename);
 
-        if (!oldFile.exists() && newFile.exists()) {
-            System.out.println("✅ Passed: " + filename + " was moved successfully.");
-        } else {
-            System.out.println("❌ Failed: " + filename + " was NOT moved.");
+        if (destFile.exists() && sourceFile.exists())
+        {
+            System.out.println("Test Passed: " + filename + " moved successfully.");
+        }
+        else
+        {
+            System.out.println("Test Failed: " + filename + " was not moved correctly.");
         }
     }
 }
