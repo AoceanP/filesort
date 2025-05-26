@@ -1,4 +1,2 @@
-Created a file sorter to solve my problem of clutter on my system.
-Allowing me to organize thousands of files in seconds.
-
-Created by Aleks
+Developed a file sorter to eliminate clutter on my system, enabling the organization of thousands of files in seconds.
+Built by Aleks
